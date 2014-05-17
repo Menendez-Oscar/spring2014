@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xsl:stylesheet version="1.0"
+xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+
+<xsl:template match="/">
+  <html>
+  <header>
+	<h2 align="center">title</h2>
+  </header>
+  <body>
+  <h2>ingredient</h2>
+  <table border="1">
+    <tr>
+      <th>name</th>
+      <th>amount</th>
+    </tr>
+    <xsl:for-each select="recipe/ingredient">
+    <tr>
+      <td><xsl:value-of select="name"/></td>
+      <td><xsl:value-of select="amount"/></td>
+    </tr>
+    </xsl:for-each>
+  </table>
+	
+  </body>
+  </html>
+</xsl:template>
+
+</xsl:stylesheet>

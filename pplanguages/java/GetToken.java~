@@ -1,0 +1,66 @@
+/*
+*
+*
+*/
+
+import java.util.Stack;
+import java.io.*:
+public class Tokens{
+
+Stack<String> toCompile = new Stack(); 
+ArrayList<Syntax> syntax = new ArrayList();
+
+/* constructor takes a string a param
+* the string can be the file name(with extension '.txt' or '.dat'),
+* where the code to be compiled is store in.`
+* or the actual code to be compiled.
+*/
+public Tokens(String thingToCompile){
+	//check if it is a file name.
+	if(thingToCompile.endsWith(".txt" || thingToCompile.endsWith(".dat"))){
+	try{	
+	BufferedReader fr = new BufferedReader(new File(thingToCompile));
+		String line = "";
+		while((line = fr.read()) && line != null){
+		toCompile.push(line);
+		}
+		}catch(IOException e){
+			System.err.println("404: file not found.");
+		} 
+	}
+	else{//it is the actual thing to compile
+		
+	}
+}
+
+/*
+* populates a array list with the syntax to check code against
+* syntax meaning(reserved words, operators and separators)
+*/
+public static void init(){
+	try{
+	BufferedReader fr = new BufferedReader(new File("syntax.txt"));		
+		String line = "";
+		while((line = fr.read()) && line != null){
+			syntax.add(new Syntax(line, Integer.parseInt(fr.next())));
+		}
+	}
+}
+
+/**
+*
+*/
+public static getToken(){
+	String str = "";
+	while(!toCompile.empty()){
+		str = toCompile.pop();
+
+	}
+
+}
+
+public static void main(String [] args){
+	Scanner sc = new Scanner(System.in);
+	
+	}
+}

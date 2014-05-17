@@ -1,0 +1,1852 @@
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon
+*/
+#ifndef BECOMES_H
+#define BECOMES_H
+
+#include "tokens.h"
+#include "stmtNode.h"
+#include "scanner.h"
+#include "expr.h"
+#include "id.h"
+
+class Becomes : public StmtNode {
+    private:    Id      *lhs;       //lefthand side of assignment statement
+                Expr    *rhs;       //right hand side of assignment statement
+    public: Becomes (){ nodekind = BECOMES;};   //constructor
+            Id *getLHS() {return lhs;};         //accessor
+            Expr *getRHS() {return rhs;};       //accessor
+            void setRHS(Expr *n) {rhs = n;};
+            void setLHS(Id *n) {lhs = n;};
+            void assignment(Scanner &scan);     //parses assignment stmt
+};
+#endif
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon 
+*/
+
+#include "tokens.h"
+#include "becomes.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+void  Becomes::assignment(Scanner &scan) {  //parses assignment stmt
+    Expr  *ex = new Expr();
+    string variable = scan.getCurrName();
+    Id *id = new Id(variable);
+    setLHS(id);
+    scan.nextToken();
+    if (scan.getCurrSymb() != BECOMES) {
+        string msg  = "Becomes::assignment:  wrong token type found --> ";
+        msg.append(scan.getCurrName());
+        new Error(-71, msg);
+    } //if
+    scan.nextToken();
+    rhs = ex->parse(scan);
+} //assignment
+#include  "parseTree.h"
+#include <iostream>
+using namespace std;
+
+int main(int argc, char **argv ) {
+    ParseTree  ptree;
+    string fname="";
+    if (argc > 1) {
+        fname.append(argv[1]);
+    }
+    ptree.init(fname);
+    ptree.build();
+    ptree.execute();
+}
+#ifndef ERROR_h
+#define ERROR_h
+
+#include <iostream>
+#include <stdlib.h>
+
+class Error {
+
+    public: Error(int);
+            Error(int, std::string);
+
+};
+#endif
+#include "error.h"
+#include <iostream>
+using namespace std;
+
+Error::Error(int num) {
+    cerr << "ERROR:  number " << num << endl;
+    exit(num);
+}
+
+Error::Error(int num, std::string msg) {
+    cerr << "ERROR:  number " << num << ":  " << msg << endl;
+    exit(num);
+}
+/*  For nodes representing expressions
+**  Written by Aaron Gordon
+*/
+#ifndef EXPR_H
+#define EXPR_H
+
+#include  "node.h"
+#include  "scanner.h"
+#include  <iostream>
+
+class Expr : public Node {
+    public: Expr (){ };     //constructor
+    public: Expr * parse(Scanner &scan);
+    public: virtual void setLeft(Expr *) {std::cout << "expr.setLeft" << std::endl;  };
+};
+#endif
+/*  For nodes representing arithmetic expressions
+**  Written by Aaron Gordon
+*/
+
+#include  <iostream>
+#include  "expr.h"
+#include  "operator.h"
+#include  "term.h"
+#include  "termTail.h"
+#include  <stdlib.h>
+
+Expr * Expr::parse(Scanner &scan){  
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       //from the grammar
+    TermTail    *tt = new TermTail();   //from the grammar
+    lhs     = t->parse(scan);           //get the term
+    subtree = tt->parse(scan);          //get the term-tail
+    if (subtree == NULL)    return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+};  //parse
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERM_H
+#define TERM_H
+
+#include "scanner.h"
+#include "expr.h"
+class Term {
+         public: Term() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "term.h"
+#include "factor.h"
+#include "factorTail.h"
+
+Expr * Term::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     //from the grammar
+    FactorTail  *ft = new FactorTail(); //from the grammar
+    lhs     = f->parse(scan);           //get the factor
+    subtree = ft->parse(scan);          //get the factor-tail
+    if (subtree == NULL)        return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERMTAIL_h
+#define TERMTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "term.h"
+#include "tokens.h"
+#include "operator.h"
+
+class TermTail {
+         public: TermTail() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "termTail.h"
+
+Expr * TermTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       
+    TermTail    *tt = new TermTail();
+    // term-tail:  +  term  term-tail
+    //             -  term  term-tail
+    if (scan.getCurrSymb() == PLUS || scan.getCurrSymb() == MINUS) {    
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = t->parse(scan);           //get the term
+        op->setRight(rhs);
+        subtree = tt->parse(scan);          //get the term-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTOR_H
+#define FACTOR_H
+
+#include "scanner.h"
+#include "expr.h"
+class Factor {
+         public: Factor() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factor.h"
+#include "id.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+Expr * Factor::parse(Scanner &scan) {
+    if (scan.getCurrSymb() == ID) { // factor  :  ID
+        Id   *id = new Id(scan.getCurrName());
+        scan.nextToken();
+        return  id;
+    } else if (scan.getCurrSymb() == NUMBER) {  // factor  :  CONST
+        Number *num = new Number(scan.getCurrValue());
+        scan.nextToken();
+        return num;
+    } else if (scan.getCurrSymb() == OPEN) {    // factor :  (  expr  )
+        scan.nextToken();
+        Expr  ex;
+        Expr  *exptr = ex.parse(scan);
+        scan.nextToken();
+        return exptr;
+    } else {
+        cerr << "Factor::parse  Unknown expression,  currSymb = " <<
+                scan.getCurrSymb() << endl;
+        new Error(3);
+    }
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTORTAIL_h
+#define FACTORTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "factor.h"
+#include "tokens.h"
+#include "operator.h"
+
+class FactorTail {
+         public: FactorTail() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factorTail.h"
+
+Expr * FactorTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     
+    FactorTail  *ft = new FactorTail();
+    // factor-tail:  *  factor  factor-tail
+    //               /  factor  factor-tail
+    if (scan.getCurrSymb() == TIMES || scan.getCurrSymb() == DIV) { 
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = f->parse(scan);           //get the factor
+        op->setRight(rhs);
+        subtree = ft->parse(scan);          //get the factor-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes containing operators such as +, -, *, /
+**  Written by Aaron Gordon
+*/
+#ifndef OPERATOR_h
+#define OPERATOR_h
+
+#include "expr.h"
+#include <stdlib.h>
+
+class Operator : public  Expr {
+     Expr   *left;
+     Expr   *right;
+     public: Operator() {left = NULL; };            //constructor
+     public: Operator(int type) {left = NULL;  nodekind = type;};       //constructor
+     public: Expr* getRight(){ return right;};      //returns right child
+     public: Expr* getLeft(){ return left;};        //returns Left child
+     public: void  setRight(Expr* ptr) {right = ptr;};  //assigns to right
+     public: void  setLeft(Expr* ptr);              //assigns to Left
+};
+#endif
+#include "operator.h"
+
+void  Operator::setLeft(Expr* ptr) {
+    if (left == NULL)   left = ptr; 
+    else                left->setLeft(ptr);
+}
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+#ifndef  PARSETREE_h
+#define  PARSETREE_h
+
+#include    "StmtNode.h"
+#include    "scanner.h"
+
+class ParseTree {
+    private:    StmtNode *root;     //points to recursive descent tree
+                Scanner  scan;      //Scanner object to retrieve tokens
+    public:     ParseTree();        //constructor
+                void build();
+                void execute();
+                void stmtTail (StmtNode &current);
+                void stmt (StmtNode  *&current); 
+                void init(std::string fname);
+};
+#endif
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+
+//-------------------------
+#include    <stdio.h>
+#include    "tokens.h"
+#include    "node.h"
+#include    "parseTree.h"
+#include    "becomes.h"
+#include    "id.h"
+#include    "error.h"
+#include    "operator.h"
+#include    "number.h"
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+ParseTree::ParseTree(){
+    root = NULL;
+}//constructor
+
+void ParseTree::init(string fname) {
+    scan.init(fname);
+}
+
+void ParseTree::execute(){
+    StmtNode *curr = root;
+    Number *num;
+    Operator *op;
+    while (curr != NULL ) {
+        cout << "\n\n\nParseTree::executing" << endl;
+        if (curr->getKind() != BECOMES) {
+            string msg = "BECOMES (:=) expected";
+            new Error(101, msg);
+        }
+        Becomes  *be = (Becomes *) curr;
+        Node *n = be->getLHS();
+        Id  *id = (Id *)n;
+        cout <<  id->getName()  << "  := " ;
+        n = be->getRHS();
+        switch (n->getKind()) {
+        case NUMBER:    num = (Number *) n;
+                        cout << num->getValue();
+                        break;
+        case PLUS:
+        case MINUS:
+        case DIV:
+        case TIMES:
+                        op = (Operator *) n;
+                        //op->print();
+                        break;
+        default:        cout << "  OTHER  ";
+        }//switch
+        cout << endl;
+        curr = curr->getNext();
+    }//while
+}//execute
+
+void ParseTree::build( ) {  /* prog : stmt stmt-tail */
+    stmt(root);             //root points to first statement node after call
+    stmtTail(*root);        //pass in node where rest of pgm is to be attached
+    cout << "time to end, token is " << scan.getCurrSymb() << endl;
+    if (scan.getCurrSymb() != PERIOD) new Error(6, " PERIOD expected");
+} //build
+
+void ParseTree::stmtTail (StmtNode &current) {
+/*  Current is the end of a chain of statements.  If there are more
+    statements, tack them on the end. */
+    StmtNode *nextStmt;
+    if (scan.getCurrSymb() == SEMICOLON)  { // stmt-tail : SEMICOLON stmt stmt-tail 
+      cout << "stmtTail: " << endl;
+      scan.nextToken();
+      stmt(nextStmt);               //create the statement node for the next statement
+      current.setNext(nextStmt);    //attach it to the list of nodes
+      stmtTail(*nextStmt);          //build up the rest of the program
+    } // else stmt-tail is empty; do nothing
+} //stmtTail
+
+void ParseTree::stmt (StmtNode *&current) {//create a statement node and have current point to it
+    int symb = scan.getCurrSymb();
+    switch (symb) {
+    case ID: Becomes *be;
+             be = new Becomes();
+             current = be;
+             be->assignment(scan);  //find an assignment statement
+             break;                 // stmt : ID := expr 
+    default: char msg[100];
+             string msg2="Unrecognized statement: ";
+             new Error(4,msg2.append( scan.getCurrName()));
+    }
+} //ParseTree
+/*  For nodes the superclass for all nodes
+**  in the recursive descent tree
+**  Written by Aaron Gordon
+*/
+#ifndef NODE_h
+#define NODE_h
+
+class Node  {
+     protected: int nodekind;                   //token number
+     public: Node(){};                          //constructor
+             int getKind() {return nodekind;};  //accessor
+};
+#endif
+/*  For nodes representing identifiers
+**  Written by Aaron Gordon
+*/
+#ifndef ID_H
+#define ID_H
+#include "tokens.h"
+#include "expr.h"
+
+class Id : public Expr {
+         private: std::string  printname;   //the string representation of the identifier
+         public: Id(std::string s) {nodekind = ID; printname = s;};         //constructor
+                 std::string getName() { return printname;};    //accessor method
+};
+#endif
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon
+*/
+#ifndef BECOMES_H
+#define BECOMES_H
+
+#include "tokens.h"
+#include "stmtNode.h"
+#include "scanner.h"
+#include "expr.h"
+#include "id.h"
+
+class Becomes : public StmtNode {
+    private:    Id      *lhs;       //lefthand side of assignment statement
+                Expr    *rhs;       //right hand side of assignment statement
+    public: Becomes (){ nodekind = BECOMES;};   //constructor
+            Id *getLHS() {return lhs;};         //accessor
+            Expr *getRHS() {return rhs;};       //accessor
+            void setRHS(Expr *n) {rhs = n;};
+            void setLHS(Id *n) {lhs = n;};
+            void assignment(Scanner &scan);     //parses assignment stmt
+};
+#endif
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon 
+*/
+
+#include "tokens.h"
+#include "becomes.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+void  Becomes::assignment(Scanner &scan) {  //parses assignment stmt
+    Expr  *ex = new Expr();
+    string variable = scan.getCurrName();
+    Id *id = new Id(variable);
+    setLHS(id);
+    scan.nextToken();
+    if (scan.getCurrSymb() != BECOMES) {
+        string msg  = "Becomes::assignment:  wrong token type found --> ";
+        msg.append(scan.getCurrName());
+        new Error(-71, msg);
+    } //if
+    scan.nextToken();
+    rhs = ex->parse(scan);
+} //assignment
+#include  "parseTree.h"
+#include <iostream>
+using namespace std;
+
+int main(int argc, char **argv ) {
+    ParseTree  ptree;
+    string fname="";
+    if (argc > 1) {
+        fname.append(argv[1]);
+    }
+    ptree.init(fname);
+    ptree.build();
+    ptree.execute();
+}
+#ifndef ERROR_h
+#define ERROR_h
+
+#include <iostream>
+#include <stdlib.h>
+
+class Error {
+
+    public: Error(int);
+            Error(int, std::string);
+
+};
+#endif
+#include "error.h"
+#include <iostream>
+using namespace std;
+
+Error::Error(int num) {
+    cerr << "ERROR:  number " << num << endl;
+    exit(num);
+}
+
+Error::Error(int num, std::string msg) {
+    cerr << "ERROR:  number " << num << ":  " << msg << endl;
+    exit(num);
+}
+/*  For nodes representing expressions
+**  Written by Aaron Gordon
+*/
+#ifndef EXPR_H
+#define EXPR_H
+
+#include  "node.h"
+#include  "scanner.h"
+#include  <iostream>
+
+class Expr : public Node {
+    public: Expr (){ };     //constructor
+    public: Expr * parse(Scanner &scan);
+    public: virtual void setLeft(Expr *) {std::cout << "expr.setLeft" << std::endl;  };
+};
+#endif
+/*  For nodes representing arithmetic expressions
+**  Written by Aaron Gordon
+*/
+
+#include  <iostream>
+#include  "expr.h"
+#include  "operator.h"
+#include  "term.h"
+#include  "termTail.h"
+#include  <stdlib.h>
+
+Expr * Expr::parse(Scanner &scan){  
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       //from the grammar
+    TermTail    *tt = new TermTail();   //from the grammar
+    lhs     = t->parse(scan);           //get the term
+    subtree = tt->parse(scan);          //get the term-tail
+    if (subtree == NULL)    return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+};  //parse
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERM_H
+#define TERM_H
+
+#include "scanner.h"
+#include "expr.h"
+class Term {
+         public: Term() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "term.h"
+#include "factor.h"
+#include "factorTail.h"
+
+Expr * Term::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     //from the grammar
+    FactorTail  *ft = new FactorTail(); //from the grammar
+    lhs     = f->parse(scan);           //get the factor
+    subtree = ft->parse(scan);          //get the factor-tail
+    if (subtree == NULL)        return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERMTAIL_h
+#define TERMTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "term.h"
+#include "tokens.h"
+#include "operator.h"
+
+class TermTail {
+         public: TermTail() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "termTail.h"
+
+Expr * TermTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       
+    TermTail    *tt = new TermTail();
+    // term-tail:  +  term  term-tail
+    //             -  term  term-tail
+    if (scan.getCurrSymb() == PLUS || scan.getCurrSymb() == MINUS) {    
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = t->parse(scan);           //get the term
+        op->setRight(rhs);
+        subtree = tt->parse(scan);          //get the term-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTOR_H
+#define FACTOR_H
+
+#include "scanner.h"
+#include "expr.h"
+class Factor {
+         public: Factor() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factor.h"
+#include "id.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+Expr * Factor::parse(Scanner &scan) {
+    if (scan.getCurrSymb() == ID) { // factor  :  ID
+        Id   *id = new Id(scan.getCurrName());
+        scan.nextToken();
+        return  id;
+    } else if (scan.getCurrSymb() == NUMBER) {  // factor  :  CONST
+        Number *num = new Number(scan.getCurrValue());
+        scan.nextToken();
+        return num;
+    } else if (scan.getCurrSymb() == OPEN) {    // factor :  (  expr  )
+        scan.nextToken();
+        Expr  ex;
+        Expr  *exptr = ex.parse(scan);
+        scan.nextToken();
+        return exptr;
+    } else {
+        cerr << "Factor::parse  Unknown expression,  currSymb = " <<
+                scan.getCurrSymb() << endl;
+        new Error(3);
+    }
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTORTAIL_h
+#define FACTORTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "factor.h"
+#include "tokens.h"
+#include "operator.h"
+
+class FactorTail {
+         public: FactorTail() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factorTail.h"
+
+Expr * FactorTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     
+    FactorTail  *ft = new FactorTail();
+    // factor-tail:  *  factor  factor-tail
+    //               /  factor  factor-tail
+    if (scan.getCurrSymb() == TIMES || scan.getCurrSymb() == DIV) { 
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = f->parse(scan);           //get the factor
+        op->setRight(rhs);
+        subtree = ft->parse(scan);          //get the factor-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes containing operators such as +, -, *, /
+**  Written by Aaron Gordon
+*/
+#ifndef OPERATOR_h
+#define OPERATOR_h
+
+#include "expr.h"
+#include <stdlib.h>
+
+class Operator : public  Expr {
+     Expr   *left;
+     Expr   *right;
+     public: Operator() {left = NULL; };            //constructor
+     public: Operator(int type) {left = NULL;  nodekind = type;};       //constructor
+     public: Expr* getRight(){ return right;};      //returns right child
+     public: Expr* getLeft(){ return left;};        //returns Left child
+     public: void  setRight(Expr* ptr) {right = ptr;};  //assigns to right
+     public: void  setLeft(Expr* ptr);              //assigns to Left
+};
+#endif
+#include "operator.h"
+
+void  Operator::setLeft(Expr* ptr) {
+    if (left == NULL)   left = ptr; 
+    else                left->setLeft(ptr);
+}
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+#ifndef  PARSETREE_h
+#define  PARSETREE_h
+
+#include    "StmtNode.h"
+#include    "scanner.h"
+
+class ParseTree {
+    private:    StmtNode *root;     //points to recursive descent tree
+                Scanner  scan;      //Scanner object to retrieve tokens
+    public:     ParseTree();        //constructor
+                void build();
+                void execute();
+                void stmtTail (StmtNode &current);
+                void stmt (StmtNode  *&current); 
+                void init(std::string fname);
+};
+#endif
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+
+//-------------------------
+#include    <stdio.h>
+#include    "tokens.h"
+#include    "node.h"
+#include    "parseTree.h"
+#include    "becomes.h"
+#include    "id.h"
+#include    "error.h"
+#include    "operator.h"
+#include    "number.h"
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+ParseTree::ParseTree(){
+    root = NULL;
+}//constructor
+
+void ParseTree::init(string fname) {
+    scan.init(fname);
+}
+
+void ParseTree::execute(){
+    StmtNode *curr = root;
+    Number *num;
+    Operator *op;
+    while (curr != NULL ) {
+        cout << "\n\n\nParseTree::executing" << endl;
+        if (curr->getKind() != BECOMES) {
+            string msg = "BECOMES (:=) expected";
+            new Error(101, msg);
+        }
+        Becomes  *be = (Becomes *) curr;
+        Node *n = be->getLHS();
+        Id  *id = (Id *)n;
+        cout <<  id->getName()  << "  := " ;
+        n = be->getRHS();
+        switch (n->getKind()) {
+        case NUMBER:    num = (Number *) n;
+                        cout << num->getValue();
+                        break;
+        case PLUS:
+        case MINUS:
+        case DIV:
+        case TIMES:
+                        op = (Operator *) n;
+                        //op->print();
+                        break;
+        default:        cout << "  OTHER  ";
+        }//switch
+        cout << endl;
+        curr = curr->getNext();
+    }//while
+}//execute
+
+void ParseTree::build( ) {  /* prog : stmt stmt-tail */
+    stmt(root);             //root points to first statement node after call
+    stmtTail(*root);        //pass in node where rest of pgm is to be attached
+    cout << "time to end, token is " << scan.getCurrSymb() << endl;
+    if (scan.getCurrSymb() != PERIOD) new Error(6, " PERIOD expected");
+} //build
+
+void ParseTree::stmtTail (StmtNode &current) {
+/*  Current is the end of a chain of statements.  If there are more
+    statements, tack them on the end. */
+    StmtNode *nextStmt;
+    if (scan.getCurrSymb() == SEMICOLON)  { // stmt-tail : SEMICOLON stmt stmt-tail 
+      cout << "stmtTail: " << endl;
+      scan.nextToken();
+      stmt(nextStmt);               //create the statement node for the next statement
+      current.setNext(nextStmt);    //attach it to the list of nodes
+      stmtTail(*nextStmt);          //build up the rest of the program
+    } // else stmt-tail is empty; do nothing
+} //stmtTail
+
+void ParseTree::stmt (StmtNode *&current) {//create a statement node and have current point to it
+    int symb = scan.getCurrSymb();
+    switch (symb) {
+    case ID: Becomes *be;
+             be = new Becomes();
+             current = be;
+             be->assignment(scan);  //find an assignment statement
+             break;                 // stmt : ID := expr 
+    default: char msg[100];
+             string msg2="Unrecognized statement: ";
+             new Error(4,msg2.append( scan.getCurrName()));
+    }
+} //ParseTree
+/*  For nodes the superclass for all nodes
+**  in the recursive descent tree
+**  Written by Aaron Gordon
+*/
+#ifndef NODE_h
+#define NODE_h
+
+class Node  {
+     protected: int nodekind;                   //token number
+     public: Node(){};                          //constructor
+             int getKind() {return nodekind;};  //accessor
+};
+#endif
+/*  For nodes representing statements 
+**  Written by Aaron Gordon
+*/
+#ifndef STMTNODE_h
+#define STMTNODE_h
+
+#include "stdlib.h"     //need this for NULL
+#include "node.h"
+
+class StmtNode : public Node {
+    private:    StmtNode    *next;          //the next statement
+    public: StmtNode (){ next = NULL;};     //constructor
+    public: StmtNode *getNext() {return next;};     //accessor
+    public: void setNext(StmtNode *n) {next = n;};
+};
+#endif
+/*  For nodes representing identifiers
+**  Written by Aaron Gordon
+*/
+#ifndef ID_H
+#define ID_H
+#include "tokens.h"
+#include "expr.h"
+
+class Id : public Expr {
+         private: std::string  printname;   //the string representation of the identifier
+         public: Id(std::string s) {nodekind = ID; printname = s;};         //constructor
+                 std::string getName() { return printname;};    //accessor method
+};
+#endif
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon
+*/
+#ifndef BECOMES_H
+#define BECOMES_H
+
+#include "tokens.h"
+#include "stmtNode.h"
+#include "scanner.h"
+#include "expr.h"
+#include "id.h"
+
+class Becomes : public StmtNode {
+    private:    Id      *lhs;       //lefthand side of assignment statement
+                Expr    *rhs;       //right hand side of assignment statement
+    public: Becomes (){ nodekind = BECOMES;};   //constructor
+            Id *getLHS() {return lhs;};         //accessor
+            Expr *getRHS() {return rhs;};       //accessor
+            void setRHS(Expr *n) {rhs = n;};
+            void setLHS(Id *n) {lhs = n;};
+            void assignment(Scanner &scan);     //parses assignment stmt
+};
+#endif
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon 
+*/
+
+#include "tokens.h"
+#include "becomes.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+void  Becomes::assignment(Scanner &scan) {  //parses assignment stmt
+    Expr  *ex = new Expr();
+    string variable = scan.getCurrName();
+    Id *id = new Id(variable);
+    setLHS(id);
+    scan.nextToken();
+    if (scan.getCurrSymb() != BECOMES) {
+        string msg  = "Becomes::assignment:  wrong token type found --> ";
+        msg.append(scan.getCurrName());
+        new Error(-71, msg);
+    } //if
+    scan.nextToken();
+    rhs = ex->parse(scan);
+} //assignment
+#include  "parseTree.h"
+#include <iostream>
+using namespace std;
+
+int main(int argc, char **argv ) {
+    ParseTree  ptree;
+    string fname="";
+    if (argc > 1) {
+        fname.append(argv[1]);
+    }
+    ptree.init(fname);
+    ptree.build();
+    ptree.execute();
+}
+#ifndef ERROR_h
+#define ERROR_h
+
+#include <iostream>
+#include <stdlib.h>
+
+class Error {
+
+    public: Error(int);
+            Error(int, std::string);
+
+};
+#endif
+#include "error.h"
+#include <iostream>
+using namespace std;
+
+Error::Error(int num) {
+    cerr << "ERROR:  number " << num << endl;
+    exit(num);
+}
+
+Error::Error(int num, std::string msg) {
+    cerr << "ERROR:  number " << num << ":  " << msg << endl;
+    exit(num);
+}
+/*  For nodes representing expressions
+**  Written by Aaron Gordon
+*/
+#ifndef EXPR_H
+#define EXPR_H
+
+#include  "node.h"
+#include  "scanner.h"
+#include  <iostream>
+
+class Expr : public Node {
+    public: Expr (){ };     //constructor
+    public: Expr * parse(Scanner &scan);
+    public: virtual void setLeft(Expr *) {std::cout << "expr.setLeft" << std::endl;  };
+};
+#endif
+/*  For nodes representing arithmetic expressions
+**  Written by Aaron Gordon
+*/
+
+#include  <iostream>
+#include  "expr.h"
+#include  "operator.h"
+#include  "term.h"
+#include  "termTail.h"
+#include  <stdlib.h>
+
+Expr * Expr::parse(Scanner &scan){  
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       //from the grammar
+    TermTail    *tt = new TermTail();   //from the grammar
+    lhs     = t->parse(scan);           //get the term
+    subtree = tt->parse(scan);          //get the term-tail
+    if (subtree == NULL)    return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+};  //parse
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERM_H
+#define TERM_H
+
+#include "scanner.h"
+#include "expr.h"
+class Term {
+         public: Term() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "term.h"
+#include "factor.h"
+#include "factorTail.h"
+
+Expr * Term::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     //from the grammar
+    FactorTail  *ft = new FactorTail(); //from the grammar
+    lhs     = f->parse(scan);           //get the factor
+    subtree = ft->parse(scan);          //get the factor-tail
+    if (subtree == NULL)        return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERMTAIL_h
+#define TERMTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "term.h"
+#include "tokens.h"
+#include "operator.h"
+
+class TermTail {
+         public: TermTail() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "termTail.h"
+
+Expr * TermTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       
+    TermTail    *tt = new TermTail();
+    // term-tail:  +  term  term-tail
+    //             -  term  term-tail
+    if (scan.getCurrSymb() == PLUS || scan.getCurrSymb() == MINUS) {    
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = t->parse(scan);           //get the term
+        op->setRight(rhs);
+        subtree = tt->parse(scan);          //get the term-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTOR_H
+#define FACTOR_H
+
+#include "scanner.h"
+#include "expr.h"
+class Factor {
+         public: Factor() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factor.h"
+#include "id.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+Expr * Factor::parse(Scanner &scan) {
+    if (scan.getCurrSymb() == ID) { // factor  :  ID
+        Id   *id = new Id(scan.getCurrName());
+        scan.nextToken();
+        return  id;
+    } else if (scan.getCurrSymb() == NUMBER) {  // factor  :  CONST
+        Number *num = new Number(scan.getCurrValue());
+        scan.nextToken();
+        return num;
+    } else if (scan.getCurrSymb() == OPEN) {    // factor :  (  expr  )
+        scan.nextToken();
+        Expr  ex;
+        Expr  *exptr = ex.parse(scan);
+        scan.nextToken();
+        return exptr;
+    } else {
+        cerr << "Factor::parse  Unknown expression,  currSymb = " <<
+                scan.getCurrSymb() << endl;
+        new Error(3);
+    }
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTORTAIL_h
+#define FACTORTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "factor.h"
+#include "tokens.h"
+#include "operator.h"
+
+class FactorTail {
+         public: FactorTail() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factorTail.h"
+
+Expr * FactorTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     
+    FactorTail  *ft = new FactorTail();
+    // factor-tail:  *  factor  factor-tail
+    //               /  factor  factor-tail
+    if (scan.getCurrSymb() == TIMES || scan.getCurrSymb() == DIV) { 
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = f->parse(scan);           //get the factor
+        op->setRight(rhs);
+        subtree = ft->parse(scan);          //get the factor-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes containing operators such as +, -, *, /
+**  Written by Aaron Gordon
+*/
+#ifndef OPERATOR_h
+#define OPERATOR_h
+
+#include "expr.h"
+#include <stdlib.h>
+
+class Operator : public  Expr {
+     Expr   *left;
+     Expr   *right;
+     public: Operator() {left = NULL; };            //constructor
+     public: Operator(int type) {left = NULL;  nodekind = type;};       //constructor
+     public: Expr* getRight(){ return right;};      //returns right child
+     public: Expr* getLeft(){ return left;};        //returns Left child
+     public: void  setRight(Expr* ptr) {right = ptr;};  //assigns to right
+     public: void  setLeft(Expr* ptr);              //assigns to Left
+};
+#endif
+#include "operator.h"
+
+void  Operator::setLeft(Expr* ptr) {
+    if (left == NULL)   left = ptr; 
+    else                left->setLeft(ptr);
+}
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+#ifndef  PARSETREE_h
+#define  PARSETREE_h
+
+#include    "StmtNode.h"
+#include    "scanner.h"
+
+class ParseTree {
+    private:    StmtNode *root;     //points to recursive descent tree
+                Scanner  scan;      //Scanner object to retrieve tokens
+    public:     ParseTree();        //constructor
+                void build();
+                void execute();
+                void stmtTail (StmtNode &current);
+                void stmt (StmtNode  *&current); 
+                void init(std::string fname);
+};
+#endif
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+
+//-------------------------
+#include    <stdio.h>
+#include    "tokens.h"
+#include    "node.h"
+#include    "parseTree.h"
+#include    "becomes.h"
+#include    "id.h"
+#include    "error.h"
+#include    "operator.h"
+#include    "number.h"
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+ParseTree::ParseTree(){
+    root = NULL;
+}//constructor
+
+void ParseTree::init(string fname) {
+    scan.init(fname);
+}
+
+void ParseTree::execute(){
+    StmtNode *curr = root;
+    Number *num;
+    Operator *op;
+    while (curr != NULL ) {
+        cout << "\n\n\nParseTree::executing" << endl;
+        if (curr->getKind() != BECOMES) {
+            string msg = "BECOMES (:=) expected";
+            new Error(101, msg);
+        }
+        Becomes  *be = (Becomes *) curr;
+        Node *n = be->getLHS();
+        Id  *id = (Id *)n;
+        cout <<  id->getName()  << "  := " ;
+        n = be->getRHS();
+        switch (n->getKind()) {
+        case NUMBER:    num = (Number *) n;
+                        cout << num->getValue();
+                        break;
+        case PLUS:
+        case MINUS:
+        case DIV:
+        case TIMES:
+                        op = (Operator *) n;
+                        //op->print();
+                        break;
+        default:        cout << "  OTHER  ";
+        }//switch
+        cout << endl;
+        curr = curr->getNext();
+    }//while
+}//execute
+
+void ParseTree::build( ) {  /* prog : stmt stmt-tail */
+    stmt(root);             //root points to first statement node after call
+    stmtTail(*root);        //pass in node where rest of pgm is to be attached
+    cout << "time to end, token is " << scan.getCurrSymb() << endl;
+    if (scan.getCurrSymb() != PERIOD) new Error(6, " PERIOD expected");
+} //build
+
+void ParseTree::stmtTail (StmtNode &current) {
+/*  Current is the end of a chain of statements.  If there are more
+    statements, tack them on the end. */
+    StmtNode *nextStmt;
+    if (scan.getCurrSymb() == SEMICOLON)  { // stmt-tail : SEMICOLON stmt stmt-tail 
+      cout << "stmtTail: " << endl;
+      scan.nextToken();
+      stmt(nextStmt);               //create the statement node for the next statement
+      current.setNext(nextStmt);    //attach it to the list of nodes
+      stmtTail(*nextStmt);          //build up the rest of the program
+    } // else stmt-tail is empty; do nothing
+} //stmtTail
+
+void ParseTree::stmt (StmtNode *&current) {//create a statement node and have current point to it
+    int symb = scan.getCurrSymb();
+    switch (symb) {
+    case ID: Becomes *be;
+             be = new Becomes();
+             current = be;
+             be->assignment(scan);  //find an assignment statement
+             break;                 // stmt : ID := expr 
+    default: char msg[100];
+             string msg2="Unrecognized statement: ";
+             new Error(4,msg2.append( scan.getCurrName()));
+    }
+} //ParseTree
+/*  For nodes the superclass for all nodes
+**  in the recursive descent tree
+**  Written by Aaron Gordon
+*/
+#ifndef NODE_h
+#define NODE_h
+
+class Node  {
+     protected: int nodekind;                   //token number
+     public: Node(){};                          //constructor
+             int getKind() {return nodekind;};  //accessor
+};
+#endif
+/*  For nodes representing statements 
+**  Written by Aaron Gordon
+*/
+#ifndef STMTNODE_h
+#define STMTNODE_h
+
+#include "stdlib.h"     //need this for NULL
+#include "node.h"
+
+class StmtNode : public Node {
+    private:    StmtNode    *next;          //the next statement
+    public: StmtNode (){ next = NULL;};     //constructor
+    public: StmtNode *getNext() {return next;};     //accessor
+    public: void setNext(StmtNode *n) {next = n;};
+};
+#endif
+/*  For nodes representing identifiers
+**  Written by Aaron Gordon
+*/
+#ifndef ID_H
+#define ID_H
+#include "tokens.h"
+#include "expr.h"
+
+class Id : public Expr {
+         private: std::string  printname;   //the string representation of the identifier
+         public: Id(std::string s) {nodekind = ID; printname = s;};         //constructor
+                 std::string getName() { return printname;};    //accessor method
+};
+#endif
+/*  For nodes representing assignment statements
+**  Written by Aaron Gordon
+*/
+#ifndef BECOMES_H
+#define BECOMES_H
+
+#include "tokens.h"
+#include "stmtnode.h"
+#include "scanner.h"
+#include "expr.h"
+#include "Id.h"
+
+class Becomes : public StmtNode {
+    private:    Id      *lhs;       //lefthand side of assignment statement
+                Expr    *rhs;       //right hand side of assignment statement
+    public: Becomes (){ nodekind = BECOMES;};   //constructor
+            Id *getLHS() {return lhs;};         //accessor
+            Expr *getRHS() {return rhs;};       //accessor
+            void setRHS(Expr *n) {rhs = n;};
+            void setLHS(Id *n) {lhs = n;};
+            void assignment(Scanner &scan);     //parses assignment stmt
+};
+#endif
+/*  For nodes representing assignment statements 
+**  Written by Aaron Gordon 
+*/
+
+#include "tokens.h"
+#include "becomes.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+void  Becomes::assignment(Scanner &scan) {  //parses assignment stmt
+    Expr  *ex = new Expr();
+    string variable = scan.getCurrName();
+    Id *id = new Id(variable);
+    setLHS(id);
+    scan.nextToken();
+    if (scan.getCurrSymb() != BECOMES) {
+        string msg  = "Becomes::assignment:  wrong token type found --> ";
+        msg.append(scan.getCurrName());
+        new Error(-71, msg);
+    } //if
+    scan.nextToken();
+    rhs = ex->parse(scan);
+} //assignment
+#include  "parseTree.h"
+#include <iostream>
+using namespace std;
+
+int main(int argc, char **argv ) {
+    ParseTree  ptree;
+    string fname="";
+    if (argc > 1) {
+        fname.append(argv[1]);
+    }
+    ptree.init(fname);
+    ptree.build();
+    ptree.execute();
+}
+#ifndef ERROR_h
+#define ERROR_h
+
+#include <iostream>
+#include <stdlib.h>
+
+class Error {
+
+    public: Error(int);
+            Error(int, std::string);
+
+};
+#endif
+#include "error.h"
+#include <iostream>
+using namespace std;
+
+Error::Error(int num) {
+    cerr << "ERROR:  number " << num << endl;
+    exit(num);
+}
+
+Error::Error(int num, std::string msg) {
+    cerr << "ERROR:  number " << num << ":  " << msg << endl;
+    exit(num);
+}
+/*  For nodes representing expressions
+**  Written by Aaron Gordon
+*/
+#ifndef EXPR_H
+#define EXPR_H
+
+#include  "node.h"
+#include  "scanner.h"
+#include  <iostream>
+
+class Expr : public Node {
+    public: Expr (){ };     //constructor
+    public: Expr * parse(Scanner &scan);
+    public: virtual void setLeft(Expr *) {std::cout << "expr.setLeft" << std::endl;  };
+};
+#endif
+/*  For nodes representing arithmetic expressions
+**  Written by Aaron Gordon
+*/
+
+#include  <iostream>
+#include  "expr.h"
+#include  "operator.h"
+#include  "term.h"
+#include  "termTail.h"
+#include  <stdlib.h>
+
+Expr * Expr::parse(Scanner &scan){  
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       //from the grammar
+    TermTail    *tt = new TermTail();   //from the grammar
+    lhs     = t->parse(scan);           //get the term
+    subtree = tt->parse(scan);          //get the term-tail
+    if (subtree == NULL)    return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+};  //parse
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERM_H
+#define TERM_H
+
+#include "scanner.h"
+#include "expr.h"
+class Term {
+         public: Term() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "term.h"
+#include "factor.h"
+#include "factorTail.h"
+
+Expr * Term::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *lhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     //from the grammar
+    FactorTail  *ft = new FactorTail(); //from the grammar
+    lhs     = f->parse(scan);           //get the factor
+    subtree = ft->parse(scan);          //get the factor-tail
+    if (subtree == NULL)        return lhs;
+    else {
+        subtree->setLeft(lhs);
+        return subtree;
+    }
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef TERMTAIL_h
+#define TERMTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "term.h"
+#include "tokens.h"
+#include "operator.h"
+
+class TermTail {
+         public: TermTail() { };        //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "termTail.h"
+
+Expr * TermTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Term        *t  = new Term();       
+    TermTail    *tt = new TermTail();
+    // term-tail:  +  term  term-tail
+    //             -  term  term-tail
+    if (scan.getCurrSymb() == PLUS || scan.getCurrSymb() == MINUS) {    
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = t->parse(scan);           //get the term
+        op->setRight(rhs);
+        subtree = tt->parse(scan);          //get the term-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTOR_H
+#define FACTOR_H
+
+#include "scanner.h"
+#include "expr.h"
+class Factor {
+         public: Factor() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factor.h"
+#include "Id.h"
+#include "number.h"
+#include "error.h"
+#include <iostream>
+
+using namespace std;
+
+Expr * Factor::parse(Scanner &scan) {
+    if (scan.getCurrSymb() == ID) { // factor  :  ID
+        Id   *id = new Id(scan.getCurrName());
+        scan.nextToken();
+        return  id;
+    } else if (scan.getCurrSymb() == NUMBER) {  // factor  :  CONST
+        Number *num = new Number(scan.getCurrValue());
+        scan.nextToken();
+        return num;
+    } else if (scan.getCurrSymb() == OPEN) {    // factor :  (  expr  )
+        scan.nextToken();
+        Expr  ex;
+        Expr  *exptr = ex.parse(scan);
+        scan.nextToken();
+        return exptr;
+    } else {
+        cerr << "Factor::parse  Unknown expression,  currSymb = " <<
+                scan.getCurrSymb() << endl;
+        new Error(3);
+    }
+    return NULL;
+}
+/*  For nodes representing numbers
+**  Written by Aaron Gordon
+*/
+#ifndef FACTORTAIL_h
+#define FACTORTAIL_h
+
+#include "scanner.h"
+#include "expr.h"
+#include "factor.h"
+#include "tokens.h"
+#include "operator.h"
+
+class FactorTail {
+         public: FactorTail() { };      //constructor
+         public: Expr * parse(Scanner &);   
+};
+#endif
+#include <stdlib.h>
+#include "factorTail.h"
+
+Expr * FactorTail::parse(Scanner &scan) {
+    Expr        *subtree;               //the expression subtree
+    Expr        *rhs;                   //lhs of the above subtree
+    Factor      *f  = new Factor();     
+    FactorTail  *ft = new FactorTail();
+    // factor-tail:  *  factor  factor-tail
+    //               /  factor  factor-tail
+    if (scan.getCurrSymb() == TIMES || scan.getCurrSymb() == DIV) { 
+        Operator   *op = new Operator(scan.getCurrSymb());
+        scan.nextToken();
+        rhs     = f->parse(scan);           //get the factor
+        op->setRight(rhs);
+        subtree = ft->parse(scan);          //get the factor-tail
+        if (subtree != NULL) {
+            subtree->setLeft(op);
+            return subtree;
+        } else return  op;
+    } //if * or /
+    return NULL;
+}
+/*  For nodes containing operators such as +, -, *, /
+**  Written by Aaron Gordon
+*/
+#ifndef OPERATOR_h
+#define OPERATOR_h
+
+#include "expr.h"
+#include <stdlib.h>
+
+class Operator : public  Expr {
+     Expr   *left;
+     Expr   *right;
+     public: Operator() {left = NULL; };            //constructor
+     public: Operator(int type) {left = NULL;  nodekind = type;};       //constructor
+     public: Expr* getRight(){ return right;};      //returns right child
+     public: Expr* getLeft(){ return left;};        //returns Left child
+     public: void  setRight(Expr* ptr) {right = ptr;};  //assigns to right
+     public: void  setLeft(Expr* ptr);              //assigns to Left
+};
+#endif
+#include "operator.h"
+
+void  Operator::setLeft(Expr* ptr) {
+    if (left == NULL)   left = ptr; 
+    else                left->setLeft(ptr);
+}
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+#ifndef  PARSETREE_h
+#define  PARSETREE_h
+
+#include    "stmtnode.h"
+#include    "scanner.h"
+
+class ParseTree {
+    private:    StmtNode *root;     //points to recursive descent tree
+                Scanner  scan;      //Scanner object to retrieve tokens
+    public:     ParseTree();        //constructor
+                void build();
+                void execute();
+                void stmtTail (StmtNode &current);
+                void stmt (StmtNode  *&current);
+                void init(std::string fname);
+};
+#endif
+/*  To build the parse tree for Descarte
+**  Written by Aaron Gordon
+*/
+
+//-------------------------
+#include    <stdio.h>
+#include    "tokens.h"
+#include    "node.h"
+#include    "parseTree.h"
+#include    "becomes.h"
+#include    "Id.h"
+#include    "error.h"
+#include    "operator.h"
+#include    "number.h"
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+ParseTree::ParseTree(){
+    root = NULL;
+}//constructor
+
+void ParseTree::init(string fname) {
+    scan.init(fname);
+}
+
+void ParseTree::execute(){
+    StmtNode *curr = root;
+    Number *num;
+    Operator *op;
+    while (curr != NULL ) {
+        cout << "\n\n\nParseTree::executing" << endl;
+        if (curr->getKind() != BECOMES) {
+            string msg = "BECOMES (:=) expected";
+            new Error(101, msg);
+        }
+        Becomes  *be = (Becomes *) curr;
+        Node *n = be->getLHS();
+        Id  *id = (Id *)n;
+        cout <<  id->getName()  << "  := " ;
+        n = be->getRHS();
+        switch (n->getKind()) {
+        case NUMBER:    num = (Number *) n;
+                        cout << num->getValue();
+                        break;
+        case PLUS:
+        case MINUS:
+        case DIV:
+        case TIMES:
+                        op = (Operator *) n;
+                        cout << op;
+                        break;
+        default:        cout << "  OTHER  ";
+        }//switch
+        cout << endl;
+        curr = curr->getNext();
+    }//while
+}//execute
+
+void ParseTree::build( ) {  /* prog : stmt stmt-tail */
+    stmt(root);             //root points to first statement node after call
+    stmtTail(*root);        //pass in node where rest of pgm is to be attached
+    cout << "time to end, token is " << scan.getCurrSymb() << endl;
+    if (scan.getCurrSymb() != PERIOD) new Error(6, " PERIOD expected");
+} //build
+
+void ParseTree::stmtTail (StmtNode &current) {
+/*  Current is the end of a chain of statements.  If there are more
+    statements, tack them on the end. */
+    StmtNode *nextStmt;
+    if (scan.getCurrSymb() == SEMICOLON)  { // stmt-tail : SEMICOLON stmt stmt-tail
+      cout << "stmtTail: " << endl;
+      scan.nextToken();
+      stmt(nextStmt);               //create the statement node for the next statement
+      current.setNext(nextStmt);    //attach it to the list of nodes
+      stmtTail(*nextStmt);          //build up the rest of the program
+    } // else stmt-tail is empty; do nothing
+} //stmtTail
+
+void ParseTree::stmt (StmtNode *&current) {//create a statement node and have current point to it
+    int symb = scan.getCurrSymb();
+    switch (symb) {
+    case ID: Becomes *be;
+             be = new Becomes();
+             current = be;
+             be->assignment(scan);  //find an assignment statement
+             break;                 // stmt : ID := expr
+    default: char msg[100];
+             string msg2="Unrecognized statement: ";
+             new Error(4,msg2.append( scan.getCurrName()));
+    }
+} //ParseTree
+/*  For nodes the superclass for all nodes
+**  in the recursive descent tree
+**  Written by Aaron Gordon
+*/
+#ifndef NODE_h
+#define NODE_h
+
+class Node  {
+     protected: int nodekind;                   //token number
+     public: Node(){};                          //constructor
+             int getKind() {return nodekind;};  //accessor
+};
+#endif
+/*  For nodes representing statements 
+**  Written by Aaron Gordon
+*/
+#ifndef STMTNODE_h
+#define STMTNODE_h
+
+#include "stdlib.h"     //need this for NULL
+#include "node.h"
+
+class StmtNode : public Node {
+    private:    StmtNode    *next;          //the next statement
+    public: StmtNode (){ next = NULL;};     //constructor
+    public: StmtNode *getNext() {return next;};     //accessor
+    public: void setNext(StmtNode *n) {next = n;};
+};
+#endif
+/*  For nodes representing identifiers
+**  Written by Aaron Gordon
+*/
+#ifndef ID_H
+#define ID_H
+#include "tokens.h"
+#include "expr.h"
+
+class Id : public Expr {
+         private: std::string  printname;   //the string representation of the identifier
+         public: Id(std::string s) {nodekind = ID; printname = s;};         //constructor
+                 std::string getName() { return printname;};    //accessor method
+};
+#endif

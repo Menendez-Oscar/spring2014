@@ -1,0 +1,2 @@
+(SETQ X (PLUS 2 2))
+(PRINT X)

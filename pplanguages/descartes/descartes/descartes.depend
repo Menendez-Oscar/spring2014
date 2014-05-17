@@ -1,0 +1,169 @@
+# depslib dependency file v1.0
+1397777575 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/becomes.cpp
+	"tokens.h"
+	"becomes.h"
+	"number.h"
+	"error.h"
+	<iostream>
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/tokens.h
+
+1398800629 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/becomes.h
+	"tokens.h"
+	"stmtnode.h"
+	"scanner.h"
+	"expr.h"
+	"Id.h"
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/stmtnode.h
+	"stdlib.h"
+	"node.h"
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/node.h
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/scanner.h
+	<fstream>
+
+1399641472 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/expr.h
+	"node.h"
+	"scanner.h"
+	<iostream>
+	<map>
+	<string>
+
+1399641439 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/Id.h
+	"tokens.h"
+	"expr.h"
+	"parseTree.h"
+
+1399641561 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/number.h
+	"tokens.h"
+	"expr.h"
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/error.h
+	<iostream>
+	<stdlib.h>
+
+1399576450 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/descarte.cpp
+	"parseTree.h"
+	<iostream>
+
+1399590306 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/parseTree.h
+	"stmtnode.h"
+	"scanner.h"
+	<map>
+	<string>
+	"operator.h"
+	"expr.h"
+
+1397777575 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/error.cpp
+	"error.h"
+	<iostream>
+
+1399580523 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/expr.cpp
+	<iostream>
+	"expr.h"
+	"operator.h"
+	"term.h"
+	"termTail.h"
+	<stdlib.h>
+
+1399670119 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/operator.h
+	"expr.h"
+	<stdlib.h>
+	"tokens.h"
+	"parseTree.h"
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/term.h
+	"scanner.h"
+	"expr.h"
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/termTail.h
+	"scanner.h"
+	"expr.h"
+	"term.h"
+	"tokens.h"
+	"operator.h"
+
+1398800672 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/factor.cpp
+	<stdlib.h>
+	"factor.h"
+	"Id.h"
+	"number.h"
+	"error.h"
+	<iostream>
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/factor.h
+	"scanner.h"
+	"expr.h"
+
+1397777575 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/factorTail.cpp
+	<stdlib.h>
+	"factorTail.h"
+
+1397777575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/factorTail.h
+	"scanner.h"
+	"expr.h"
+	"factor.h"
+	"tokens.h"
+	"operator.h"
+
+1399670102 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/operator.cpp
+	"operator.h"
+
+1399671360 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/parseTree.cpp
+	<stdio.h>
+	"tokens.h"
+	"node.h"
+	"parseTree.h"
+	"becomes.h"
+	"Id.h"
+	"error.h"
+	"operator.h"
+	"number.h"
+	"parseTree.h"
+	<iostream>
+	<string>
+	<map>
+
+1398834238 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/scanner.cpp
+	<string>
+	<ctype.h>
+	"scanner.h"
+	"tokens.h"
+	<stdlib.h>
+	<iostream>
+	<fstream>
+
+1397777575 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/term.cpp
+	<stdlib.h>
+	"term.h"
+	"factor.h"
+	"factorTail.h"
+
+1397777575 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/termTail.cpp
+	<stdlib.h>
+	"termTail.h"
+
+1399411815 source:/home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/symbolTable.cpp
+	"symbolTable.h"
+
+1399411347 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/symbolTable.h
+	"Id.h"
+	"number.h"
+
+1399583575 /home/oscar/Dropbox/School/Spring2014/pplanguages/descartes/parseTree.cpp
+	<stdio.h>
+	"tokens.h"
+	"node.h"
+	"parseTree.h"
+	"becomes.h"
+	"Id.h"
+	"error.h"
+	"operator.h"
+	"number.h"
+	"parseTree.h"
+	<iostream>
+	<string>
+	<map>
+
